@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState } from 'react';
 import { calculateCarbonFootprint, calculateFinancials } from '../utils/calculations';
 
@@ -18,30 +20,55 @@ const CalculatorPanel = () => {
           <h3 className="font-semibold mb-3">Input Values</h3>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm mb-1">Monthly Consumption (kWh)</label>
+              <label htmlFor="consumption" className="block text-sm font-medium text-gray-700 mb-1">
+                Monthly Energy Consumption (kWh)
+              </label>
+              <p className="text-xs text-gray-500 mb-2">
+                Enter your average monthly household energy usage
+              </p>
               <input
+                id="consumption"
                 type="number"
                 value={consumption}
                 onChange={(e) => setConsumption(Number(e.target.value))}
                 className="w-full px-3 py-2 border rounded"
-                placeholder="Enter monthly consumption"
+                placeholder="e.g., 1000 kWh"
               />
             </div>
+
             <div>
+              <label htmlFor="generation" className="block text-sm font-medium text-gray-700 mb-1">
+                Monthly Solar Generation (kWh)
+              </label>
+              <p className="text-xs text-gray-500 mb-2">
+                Enter your expected monthly solar panel output
+              </p>
               <input
+                id="generation"
                 type="number"
                 value={generation}
                 onChange={(e) => setGeneration(Number(e.target.value))}
                 className="w-full px-3 py-2 border rounded"
-                placeholder="Enter monthly generation"
+                placeholder="e.g., 1200 kWh"
               />
             </div>
+
+            <div>
+              <label htmlFor="greenPercentage" className="block text-sm font-medium text-gray-700 mb-1">
+                Green Energy Percentage (%)
+              </label>
+              <p className="text-xs text-gray-500 mb-2">
+                Percentage of your energy from renewable sources
+              </p>
               <input
+                id="greenPercentage"
                 type="number"
                 value={greenPercentage}
                 onChange={(e) => setGreenPercentage(Number(e.target.value))}
                 className="w-full px-3 py-2 border rounded"
-                placeholder="Enter green energy percentage"
+                min="0"
+                max="100"
+                placeholder="e.g., 60%"
               />
             </div>
           </div>
@@ -71,6 +98,7 @@ const CalculatorPanel = () => {
           </div>
         </div>
       </div>
+    </div>
   );
 };
 

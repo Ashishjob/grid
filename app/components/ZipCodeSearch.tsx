@@ -174,13 +174,13 @@ const ZipCodeSearch = ({ onSearch }: { onSearch: (data: ZipCodeData) => void }) 
   };
 
   return (
-    <div className="flex gap-4 items-center mb-6">
+    <div className="flex gap-4 items-center mb-6 w-full">
       <input
         type="text"
         value={zipCode}
         onChange={(e) => setZipCode(e.target.value)}
         placeholder="Enter ZIP code"
-        className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+        className="px-4 py-2 w-full border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
       />
       <button
         onClick={handleSearch}
