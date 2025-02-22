@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Battery, User, Zap, ZapOff, AlertCircle } from 'lucide-react';
+import { Battery, User, Zap, ZapOff, AlertCircle, RefreshCw } from 'lucide-react';
 
 interface EnergyData {
   id: string;
@@ -29,66 +29,84 @@ const UserView = () => {
     status: 'connecting'
   });
 
-  useEffect(() => {
-    let ws: WebSocket;
-    let reconnectTimeout: NodeJS.Timeout;
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
 
-    const connectWebSocket = () => {
-      setWsStatus({ status: 'connecting' });
-      
+  const connectWebSocket = () => {
+    setWsStatus({ status: 'connecting' });
+    
+    const ws = new WebSocket('ws://localhost:8765');
+
+    ws.onopen = () => {
+      setWsStatus({ 
+        status: 'connected',
+        message: 'Connected to Arduino' 
+      });
+    };
+
+    ws.onmessage = (event) => {
       try {
-        ws = new WebSocket('ws://localhost:8765');
-
-        ws.onopen = () => {
-          setWsStatus({ status: 'connected' });
-        };
-
-        ws.onmessage = (event) => {
-          try {
-            const data = JSON.parse(event.data);
-            setEnergyData(data);
-          } catch (error) {
-            console.error('Failed to parse message:', error);
-            setWsStatus({ 
-              status: 'error', 
-              message: 'Failed to parse sensor data' 
-            });
-          }
-        };
-
-        ws.onerror = () => {
-          setWsStatus({ 
-            status: 'error', 
-            message: 'Connection to sensor failed' 
-          });
-        };
-
-        ws.onclose = () => {
-          setWsStatus({ 
-            status: 'error', 
-            message: 'Connection lost. Reconnecting...' 
-          });
-          reconnectTimeout = setTimeout(connectWebSocket, 5000);
-        };
-
+        const data = JSON.parse(event.data);
+        setEnergyData(data);
+        setLastUpdate(new Date());
       } catch (error) {
+        console.error('Failed to parse Arduino data:', error);
         setWsStatus({ 
           status: 'error', 
-          message: 'Failed to connect to sensor' 
+          message: 'Invalid data received from Arduino' 
         });
-        reconnectTimeout = setTimeout(connectWebSocket, 5000);
       }
     };
 
-    connectWebSocket();
+    ws.onerror = () => {
+      setWsStatus({ 
+        status: 'error', 
+        message: 'Connection failed. Is the Arduino bridge running?' 
+      });
+    };
+
+    ws.onclose = () => {
+      setWsStatus({ 
+        status: 'error', 
+        message: 'Connection lost. Is the Arduino connected?' 
+      });
+    };
+
+    return ws;
+  };
+
+  useEffect(() => {
+    let ws: WebSocket;
+    let reconnectInterval: NodeJS.Timeout;
+
+    const connect = () => {
+      ws = connectWebSocket();
+    };
+
+    connect();
+
+    // Attempt to reconnect every 5 seconds if connection fails
+    reconnectInterval = setInterval(() => {
+      if (wsStatus.status === 'error') {
+        console.log('Attempting to reconnect...');
+        if (ws) {
+          ws.close();
+        }
+        connect();
+      }
+    }, 5000);
 
     return () => {
       if (ws) {
         ws.close();
       }
-      clearTimeout(reconnectTimeout);
+      clearInterval(reconnectInterval);
     };
   }, []);
+
+  const handleManualReconnect = () => {
+    setWsStatus({ status: 'connecting' });
+    const ws = connectWebSocket();
+  };
 
   const getBatteryColor = (level: number) => {
     if (level >= 70) return 'text-green-500';
@@ -98,14 +116,33 @@ const UserView = () => {
 
   return (
     <div className="max-w-2xl mx-auto p-6">
-      {wsStatus.status !== 'connected' && (
-        <div className={`mb-4 p-3 rounded-lg flex items-center gap-2 ${
-          wsStatus.status === 'connecting' 
-            ? 'bg-yellow-50 text-yellow-700' 
-            : 'bg-red-50 text-red-700'
-        }`}>
+      {/* Connection Status with Manual Reconnect */}
+      <div className={`mb-4 p-3 rounded-lg flex items-center justify-between ${
+        wsStatus.status === 'connecting' 
+          ? 'bg-yellow-50 text-yellow-700' 
+          : wsStatus.status === 'connected'
+          ? 'bg-green-50 text-green-700'
+          : 'bg-red-50 text-red-700'
+      }`}>
+        <div className="flex items-center gap-2">
           <AlertCircle className="w-5 h-5" />
-          <span>{wsStatus.message || 'Connecting to sensor...'}</span>
+          <span>{wsStatus.message || 'Connecting to Arduino...'}</span>
+        </div>
+        {wsStatus.status === 'error' && (
+          <button
+            onClick={handleManualReconnect}
+            className="flex items-center gap-1 px-2 py-1 rounded bg-white/50 hover:bg-white/80 transition-colors"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Reconnect
+          </button>
+        )}
+      </div>
+
+      {/* Last Update Timestamp */}
+      {lastUpdate && wsStatus.status === 'connected' && (
+        <div className="mb-4 text-sm text-gray-500">
+          Last updated: {lastUpdate.toLocaleTimeString()}
         </div>
       )}
 
