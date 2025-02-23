@@ -6,6 +6,7 @@
 // Create new sketch (sketch.c by default is created)
 // Press the Upload (Right Arrow symbol) button in the top right
 // This code is now compiled, running asynchronously on the Arduino 
+
 // House configuration
 const char* HOUSE_ID = "HouseA";
 const int SEND_INTERVAL = 2000;
